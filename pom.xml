@@ -13,7 +13,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
-        <spigot-api.version>1.8-R0.1-SNAPSHOT</spigot-api.version>
+        <spigot-api.version>1.19-R0.1-SNAPSHOT</spigot-api.version>
     </properties>
 
     <modules>

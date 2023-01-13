@@ -7,17 +7,14 @@ package me.filoghost.holographicdisplays.plugin.config;
 
 import me.filoghost.fcommons.Colors;
 import me.filoghost.fcommons.MaterialsHelper;
-import me.filoghost.fcommons.Strings;
+import me.filoghost.holographicdisplays.core.placeholder.parsing.StringWithPlaceholders;
 import me.filoghost.holographicdisplays.plugin.format.DisplayFormat;
 import me.filoghost.holographicdisplays.plugin.internal.hologram.InternalHologramLine;
 import me.filoghost.holographicdisplays.plugin.internal.hologram.ItemInternalHologramLine;
 import me.filoghost.holographicdisplays.plugin.internal.hologram.TextInternalHologramLine;
-import me.filoghost.holographicdisplays.plugin.lib.nbt.parser.MojangsonParseException;
-import me.filoghost.holographicdisplays.plugin.lib.nbt.parser.MojangsonParser;
-import me.filoghost.holographicdisplays.core.placeholder.parsing.StringWithPlaceholders;
-import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.Locale;
 
@@ -39,33 +36,18 @@ public class InternalHologramLineParser {
         }
     }
 
-    @SuppressWarnings("deprecation")
     private static ItemStack parseItemStack(String serializedItem) throws InternalHologramLoadException {
         serializedItem = serializedItem.trim();
 
-        // Parse json
-        int nbtStart = serializedItem.indexOf('{');
-        int nbtEnd = serializedItem.lastIndexOf('}');
-        String nbtString = null;
-
-        String basicItemData;
-
-        if (nbtStart > 0 && nbtEnd > 0 && nbtEnd > nbtStart) {
-            nbtString = serializedItem.substring(nbtStart, nbtEnd + 1);
-            basicItemData = serializedItem.substring(0, nbtStart) + serializedItem.substring(nbtEnd + 1);
-        } else {
-            basicItemData = serializedItem;
-        }
-
-        basicItemData = Strings.stripChars(basicItemData, ' ');
+        String basicItemData = serializedItem.replace(" ", "");
 
         String materialName;
-        short dataValue = 0;
+        int custom = 0;
 
         if (basicItemData.contains(":")) {
-            String[] materialAndDataValue = Strings.split(basicItemData, ":", 2);
+            String[] materialAndDataValue = basicItemData.split(":");
             try {
-                dataValue = (short) Integer.parseInt(materialAndDataValue[1]);
+                custom = (short) Integer.parseInt(materialAndDataValue[1]);
             } catch (NumberFormatException e) {
                 throw new InternalHologramLoadException("data value \"" + materialAndDataValue[1] + "\" is not a valid number");
             }
@@ -79,18 +61,13 @@ public class InternalHologramLineParser {
             throw new InternalHologramLoadException("\"" + materialName + "\" is not a valid material");
         }
 
-        ItemStack itemStack = new ItemStack(material, 1, dataValue);
+        ItemStack itemStack = new ItemStack(material, 1);
 
-        if (nbtString != null) {
-            try {
-                // Check NBT syntax validity before applying it
-                MojangsonParser.parse(nbtString);
-                Bukkit.getUnsafe().modifyItemStack(itemStack, nbtString);
-            } catch (MojangsonParseException e) {
-                throw new InternalHologramLoadException("invalid NBT data, " + e.getMessage());
-            } catch (Exception e) {
-                throw new InternalHologramLoadException("unexpected exception while parsing NBT data", e);
-            }
+        if (custom != 0) {
+            ItemMeta itemMeta = itemStack.getItemMeta();
+            assert itemMeta != null;
+            itemMeta.setCustomModelData(custom);
+            itemStack.setItemMeta(itemMeta);
         }
 
         return itemStack;
